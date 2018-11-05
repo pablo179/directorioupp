@@ -9,7 +9,8 @@ import {
     NativeModules,
     Dimensions,
     Image,
-    TouchableOpacity
+    TouchableOpacity,
+    Linking
 } from 'react-native';
 import {Icon,Button} from 'react-native-elements'
 import Modal from "react-native-modal";
@@ -18,19 +19,28 @@ const { UIManager } = NativeModules;
 var heightw = Dimensions.get('window').height;
 var widthw  =Dimensions.get('window').width;
 UIManager.setLayoutAnimationEnabledExperimental(true);
-
 export default class MyProject extends Component {
     static navigationOptions = {
         header: null,
     };
     _toggleModal = () =>
     this.setState({ isModalVisible: !this.state.isModalVisible});
+    
     _togglesearch=()=>
     this.setState({ issearchvisible: !this.state.issearchvisible});
+
+    _togglesearchclean=()=>{
+        this.textInput.clear();
+        this.SearchFilterFunction('');
+        this.setState({ issearchvisible: !this.state.issearchvisible});
+    }
+    
     _toggleMenu=()=>
     this.setState({ismenuvisible:!this.state.ismenuvisible});
+    
     _togglefilteropen=()=>
     this.setState({filteropen:!this.state.filteropen});
+    
     constructor(props) {
         super(props);
         this.state = {
@@ -58,7 +68,8 @@ export default class MyProject extends Component {
             });
         })
         .catch((error) => {
-            this.setState({isLoading: false, noconnection:true});
+            this.setState({isLoading: true})
+            this.props.navigation.navigate('network')
         });
     }
 
@@ -96,33 +107,29 @@ export default class MyProject extends Component {
             />
         );
     }
+
     GetListViewItem (profchoose) {
-    this.setState({promod:profchoose})
-    this.setState({ isModalVisible: !this.state.isModalVisible});
-       }
+        this.setState({promod:profchoose})
+        this.setState({ isModalVisible: !this.state.isModalVisible});
+    }
     GetFilterItem(filter){
         Alert.alert(filter)
     }
     render() {
-        const { navigate } = this.props.navigation;
+        acerca=()=>{
+             this.setState({ismenuvisible:false})
+             this.props.navigation.navigate('Main');
+        }
+
         if (this.state.isLoading) {
             return (
                 <View style={styles.intro}>
                     <Image 
-                    style={styles.imglog}
-                    source={require('../media/upp.png')}/>
+                        style={styles.imglog}
+                        source={require('../media/upp.png')}
+                    />
                 </View>
             );
-        }
-        acerca=()=>{
-            // this.setState({ismenuvisible:false})
-            // this.props.navigation.navig('Main')
-            const args={
-                number: '7717721362',
-                prompt:false
-            }
-            call(args).catch(Alert.alert('imposible realizar llamada'));
-            
         }
         return (
             <View style={styles.intro}>
@@ -145,14 +152,25 @@ export default class MyProject extends Component {
                             placeholder="Search Here"
                             clearTextOnFocus={true}
                             placeholderTextColor='white'
+                            ref={input => { this.textInput = input }}
                         />
-                    }
+                    }   
+                    {!this.state.issearchvisible ?
                         <Icon
                             name='search'
                             type='feather'
                             color='white'
                             onPress={this._togglesearch}
                         />
+                        :
+                        <Icon
+                            name='cross'
+                            type='entypo'
+                            color='white'
+                            onPress={this._togglesearchclean}
+                        />
+                    }
+                    
                 </View>
 
                 <ListView
@@ -161,22 +179,22 @@ export default class MyProject extends Component {
                     renderSeparator= {this.ListViewItemSeparator}
                     enableEmptySections={true}
                     renderRow={(rowData) => 
-                        <TouchableOpacity
+                    <TouchableOpacity
                         onPress={this.GetListViewItem.bind(this,rowData)}
-                            style={{paddingLeft: '7.69%',paddingTop:'4.54%'}}
-                        >            
-                            <View style={styles.procon}>
-                                <Image style={styles.proima} 
-                                    source={{uri:rowData.imaurl}}
-                                />
-                                <Text style={styles.pronom}>
-                                    {rowData.nombre}
-                                </Text>
-                                <Text style={styles.procar}>
-                                    {rowData.cargo}
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
+                        style={{paddingLeft: '7.69%',paddingTop:'4.54%'}}
+                    >            
+                        <View style={styles.procon}>
+                            <Image style={styles.proima} 
+                                source={{uri:rowData.imaurl}}
+                            />
+                            <Text style={styles.pronom}>
+                                {rowData.nombre}
+                            </Text>
+                            <Text style={styles.procar}>
+                                {rowData.cargo}
+                            </Text>
+                        </View>
+                    </TouchableOpacity>
                     }
                 />
                 <Modal 
@@ -220,7 +238,9 @@ export default class MyProject extends Component {
                         <Text style={styles.modcam}>
                             {this.state.promod.cargo} </Text>
                     </View>
-                    <View style={styles.modline}>
+                    <TouchableOpacity style={styles.modline} onPress={()=>{
+                        Linking.openURL('mailto:'+this.state.promod.correo);
+                    }}>
                         <Icon
                             name='mail'
                             type='feather'
@@ -228,8 +248,14 @@ export default class MyProject extends Component {
                         /> 
                         <Text style={styles.modcam}> 
                             {this.state.promod.correo} </Text>
-                    </View>
-                    <View style={styles.modline}>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.modline} onPress={()=>{
+                        const args={
+                             number: '+527715477510,'+this.state.promod.ext,
+                             prompt:false
+                         }
+                        call(args).catch();
+                    }} >
                         <Icon
                             name='phone'
                             type='feather'
@@ -237,7 +263,7 @@ export default class MyProject extends Component {
                         /> 
                         <Text style={styles.modcam}>
                             Ext: {this.state.promod.ext} </Text>
-                    </View>
+                    </TouchableOpacity>
                         <Button
                             title='Aceptar'
                             size={10}
@@ -286,7 +312,7 @@ export default class MyProject extends Component {
                         color='gray'
                         size={1}
                     />
-                </TouchableOpacity>     
+                </TouchableOpacity> 
                 </View>
                 </Modal>
             </View>
@@ -345,12 +371,12 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         paddingLeft:'33.27%',
         paddingTop:'2%',
-        paddingRight:'1%'
-    },
+        paddingRight:'1%',
+        },
     proima:{
         position: 'absolute',
-        width: '41.27%',
-        height: '60%',
+        width: '41.37%',
+        height: '60.10%',
         borderRadius: 6,
         top:'20%',
         left: '7.69%'
@@ -358,11 +384,12 @@ const styles = StyleSheet.create({
     pronom:{
         fontFamily: 'Quicksand-Medium', 
         paddingTop: '5%',
-        
+        fontSize: widthw*.042,
     },
     procar:{
         fontFamily: 'Quicksand-Medium', 
         paddingTop: '5%',
+        fontSize: widthw*.042,
     },
     modcon:{
         width: '80%',
